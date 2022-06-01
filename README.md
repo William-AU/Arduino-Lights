@@ -37,6 +37,8 @@ Upon receiving an unparsable command, the client will flush the incomming serial
 * 0x01: Unexpected command length - All bytes in the command could not be read
   * Returns: (Expected length of the command, Actual length of the command)
 * 0x02: Missing command terminator
+* 0x03: Unrecognized command name
+  * Returns: Code of received command
 
 ## Message structure ##
 Each message sent will follow the following structure:
