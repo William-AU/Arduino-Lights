@@ -31,6 +31,13 @@ Each command has the following codes:
 * 0x02: Set all LEDs
 * 0x03: Delay
 
+## Error codes ##
+Upon receiving an unparsable command, the client will flush the incomming serial buffer and return 0xFF along with an error code and potentially more information corresponding to:
+* 0x00: Timeout
+* 0x01: Unexpected command length - All bytes in the command could not be read
+  * Returns: (Expected length of the command, Actual length of the command)
+* 0x02: Missing command terminator
+
 ## Message structure ##
 Each message sent will follow the following structure:
 - 1 byte containing the size of the entire message (including this byte)
