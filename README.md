@@ -17,8 +17,10 @@ By default the program uses a 57600 bit/s connection, this can be changed, but c
 ## Protocol ##
 To preserve space and allow for command optimisation, all commands are converted to bytecode before being sent over serial. The bytecode opcodes are as follows:
 * 0xFF: Error
-* 0xFE: Command terminator
+* 0xFE: Command terminator - require acknowledgement
 * 0xFD: Parameter terminator
+* 0xFC: Command terminator - do not require acknowledgement
+* 0xC8: ACK
 * 0x00: Command with no parameters
 * 0x01: Command with parameters
 
@@ -29,4 +31,12 @@ Each command has the following codes:
 * 0x02: Set all LEDs
 * 0x03: Delay
 
-Each command (0x00 and 0x01) must be followed by single byte command code, any parameters if applicable, and a terminator. For commands with parameters, the name is followed by a single byte denoting the number of parameters, then each parameter value can be any number of bytes representing the value, lastly each parameter must be terminated with parameter terminator byte. The full command must further be terminated by a command terminator.
+## Message structure ##
+Each message sent will follow the following structure:
+- 1 byte containing the size of the entire message (including this byte)
+- 1 byte that is either 0x00 or 0x01 to show if a command has parameters or not
+- 1 byte corresponding to the name of the command
+- If the command has parameters, repeat this for each parameter:
+  - 1 or 4 bytes with the value (a single byte is used for values <256, otherwise 4 bytes are used regardless of size (max 2^32 - 1)
+  - 1 byte (0xFD) to show the end of the parameter
+- 1 byte to show the end of the command, if this byte is 0xFE the receiver must acknowledge with 0xC8, if the command ends with 0xFC the sender does not expect an acknowledgement, which happens when the sender wishes to execute multiple commands that fit within the serial buffer
