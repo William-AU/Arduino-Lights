@@ -40,6 +40,7 @@ Upon receiving an unparsable command, the client will flush the incomming serial
 * 0x03: Unrecognized command name
   * Returns: Code of received command
 * 0x04: Incorrect number of arguments
+* 0xFF: Unexpected error
 
 ## Message structure ##
 Each message sent will follow the following structure:
