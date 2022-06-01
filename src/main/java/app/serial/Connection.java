@@ -15,13 +15,8 @@ public class Connection {
         this.commandQueue = new CommandQueue(serialPort);
     }
 
-    private String formatCommand(String name, boolean canClump, Object... args) {
+    private String formatCommand(String name, Object... args) {
         StringBuilder res = new StringBuilder();
-        if (canClump) {
-            res.append("CLUMP-");
-        } else {
-            res.append("NOCLUMP-");
-        }
         res.append(name);
         res.append('(');
         String prefix = "";
@@ -35,28 +30,28 @@ public class Connection {
 
     public void setLED(int LEDNumber, int r, int g, int b) {
         if (LEDNumber > SerialConstants.MAX_LED) return;
-        String command = formatCommand("setLED", true, LEDNumber, r, g, b);
+        String command = formatCommand("setLED", LEDNumber, r, g, b);
         send(command);
     }
 
     public void setAll(int r, int g, int b) {
-        String command = formatCommand("setALL", false, r, g, b);
+        String command = formatCommand("setALL", r, g, b);
         send(command);
     }
 
     public void clear() {
-        String command = formatCommand("clear", false);
+        String command = formatCommand("clear");
         send(command);
     }
 
     public void setLEDNoClump(int LEDNumber, int r, int g, int b) {
         if (LEDNumber > SerialConstants.MAX_LED) return;
-        String command = formatCommand("setLED", false, LEDNumber, r, g, b);
+        String command = formatCommand("setLED", LEDNumber, r, g, b);
         send(command);
     }
 
     public void delay(int millis) {
-        String command = formatCommand("delay", false, millis);
+        String command = formatCommand("delay", millis);
         send(command);
     }
 
