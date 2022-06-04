@@ -31,6 +31,9 @@ Each command has the following codes:
 * 0x02: Set all LEDs
 * 0x03: Delay
 
+## Opening a connection ##
+When opening a new connection, it must be verified with a handshake to ensure both the sender and receiver have a clean buffer to work with, this is done by the sender first sending 0xAA, afterwards the receiver must respond with 0xBB, 0xCC, 0xDD in order.
+
 ## Error codes ##
 Upon receiving an unparsable command, the client will flush the incomming serial buffer and return 0xFF along with an error code and potentially more information corresponding to:
 * 0x00: Timeout
