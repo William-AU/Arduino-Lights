@@ -1,6 +1,7 @@
 // https://github.com/oogre/StackArray
 #include <StackArray.h>
 #include <Adafruit_NeoPixel.h>
+#include <iostream>
 #ifdef __AVR__
 #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
@@ -51,7 +52,7 @@ void readCommand(int length) {
         return;
     }
 
-    if (buffer[buffer.length - 1] != 0xFE && buffer[length - 1] != 0xFC) {
+    if (buffer[sizeof(buffer) - 1] != 0xFE && buffer[length - 1] != 0xFC) {
         byte error[2] = {0xFF, 0x02};
         flushSerial();
         Serial.write(error, 2);
@@ -60,11 +61,11 @@ void readCommand(int length) {
 
     bool hasParams = buffer[0] != 0; // Dirty trick to read 0x00 as false and everything else (but in reality only 0x01) as true
     bool mustAcknowledge = false;
-    if (buffer[buffer.length - 1] == 254) {
+    if (buffer[sizeof(buffer) - 1] == 254) {
         mustAcknowledge = true;
     }
     StackArray <byte> commandStack;
-    for (int i = buffer.length - 1; i > 2; i--) {    // A bit scuffed and should probably be a queue
+    for (int i = sizeof(buffer) - 1; i > 2; i--) {    // A bit scuffed and should probably be a queue
         commandStack.push(buffer[i]);
     }
 
@@ -97,7 +98,7 @@ void readCommand(int length) {
     }
 }
 
-void delay(StackArray commandStack) {
+void delay(StackArray <byte> commandStack) {
     int millis = extractIntFromStackAndVerify(commandStack);
     if (millis == -1) return;
     if (commandStack.pop() != 0xFE && commandStack.pop() != 0xFC) {
@@ -108,20 +109,20 @@ void delay(StackArray commandStack) {
 }
 
 void flushSerial() {
-    while (Serial.available() {
+    while (Serial.available()) {
         char c = Serial.read();
     }
 }
 
 
-void setLED(StackArray commandStack) {
+void setLED(StackArray <byte> commandStack) {
     int LEDNumber = extractIntFromStackAndVerify(commandStack);
     int r = extractIntFromStackAndVerify(commandStack);
     int g = extractIntFromStackAndVerify(commandStack);
     int b = extractIntFromStackAndVerify(commandStack);
 
     // Error handling
-    if (noOfLEDs == -1 || r == -1 || g == -1 || b == -1) return;
+    if (LEDNumber == -1 || r == -1 || g == -1 || b == -1) return;
     if (commandStack.peek() != 0xFE && commandStack.peek() != 0xFC) {
         wrongNumberOfArgsError();
         return;
@@ -136,7 +137,7 @@ void wrongNumberOfArgsError() {
     Serial.write(error, 2);
 }
 
-int extractIntFromStackAndVerify(StackArray stack) {
+int extractIntFromStackAndVerify(StackArray <byte> commandStack) {
     byte firstByte = commandStack.pop();
         int value = 0;
         if (commandStack.peek() != 0xFD) {
@@ -151,7 +152,7 @@ int extractIntFromStackAndVerify(StackArray stack) {
         } else {
             value = (int) firstByte;
         }
-    byte terminator = stack.pop();
+    byte terminator = commandStack.pop();
     if (terminator != 0xFD) {
         wrongNumberOfArgsError();
         return -1;
@@ -164,13 +165,13 @@ void clear() {
   pixels.clear();
 }
 
-void setALL(StackArray commandStack) {
+void setALL(StackArray <byte> commandStack) {
     int r = extractIntFromStackAndVerify(commandStack);
     int g = extractIntFromStackAndVerify(commandStack);
     int b = extractIntFromStackAndVerify(commandStack);
 
     if (r == -1  || g == -1 || b == -1) return;
-    if (stack.pop() != 0xFD && stack.pop() != 0xFC) {
+    if (commandStack.pop() != 0xFD && commandStack.pop() != 0xFC) {
         wrongNumberOfArgsError();
         return;
     }
