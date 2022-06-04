@@ -13,6 +13,54 @@ public class Connection {
     public Connection(SerialPort serialPort) {
         this.serialPort = serialPort;
         this.commandQueue = new CommandQueue(serialPort);
+        boolean handShakeFound = false;
+        byte first = (byte) 0xFF;
+        byte second = (byte) 0xFF;
+        boolean inSequence = false;
+
+        while (serialPort.bytesAvailable() > 0) {
+            try {
+                // Empty the initial buffer
+                System.out.println(serialPort.getInputStream().read());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        try {
+            System.out.println("Initiating handshake");
+            this.serialPort.getOutputStream().write((byte) 0xAA);
+            this.serialPort.getOutputStream().flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        while (!handShakeFound) {
+            try {
+                byte received = (byte) this.serialPort.getInputStream().read();
+                System.out.println(received);
+                if (received == (byte) 0xBB) {
+                    System.out.println("Received first byte");
+                    first = (byte) 0xBB;
+                    second = (byte) 0xFF;
+                    inSequence = true;
+                }
+                else if (received == (byte) 0xCC && inSequence) {
+                    System.out.println("Received second byte");
+                    second = (byte) 0xCC;
+                }
+                else if (received == (byte) 0xDD && inSequence) {
+                    System.out.println("Received third byte, handshake finished");
+                    handShakeFound = true;
+                }
+                else if (inSequence){
+                    System.out.println("Sequence broken!");
+                    inSequence = false;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private String formatCommand(String name, Object... args) {
@@ -58,5 +106,16 @@ public class Connection {
 
     private void send(String command) {
         commandQueue.addCommand(command);
+    }
+
+    public void debugSendByte(byte toSend) {
+        try {
+            System.out.println("SENDING BYTE: " + toSend);
+            serialPort.getOutputStream().write(toSend);
+            byte received = (byte) serialPort.getInputStream().read();
+            System.out.println("RECEIVED BYTE: " + received);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

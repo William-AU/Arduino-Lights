@@ -12,6 +12,7 @@ public class ConnectionManager {
 
     public ConnectionManager() throws IOException {
         serialPort = SerialPort.getCommPort(SerialConstants.PORT);
+
         serialPort.setComPortParameters(57600, 8, 1, 0);
         serialPort.setComPortTimeouts(SerialPort.TIMEOUT_WRITE_BLOCKING, 0, 0);
         if (!serialPort.openPort()) {

@@ -5,6 +5,7 @@ import com.fazecast.jSerialComm.SerialPort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -27,32 +28,50 @@ public class CommandQueue {
     private void send() {
         if (!queue.isEmpty()) {
             StringBuilder command = new StringBuilder(queue.remove());
-            if (command.toString().toLowerCase().contains("setled")) {
+            if (command.toString().toLowerCase().contains("setled") && !queue.isEmpty() && queue.peek().toLowerCase().contains("setled")) {
                 while (queue.peek() != null && queue.peek().toLowerCase().contains("setled")) {
                     command.append(";").append(queue.remove());
                 }
-            }
-            for (byte[] bytes : clumpCommands(command.toString())) {
-                int ack = send(bytes);
-                if (ack != 0xC8) break;
+                for (byte[] bytes : clumpCommands(command.toString())) {
+                    int ack = send(bytes);
+                    if (ack != 0xC8) break;
+                }
+            } else {
+                send(BytecodeConverter.convertToBytes(command.toString()));
             }
         }
     }
 
     // TODO: add a timeout somewhere here
     private int send(byte[] command) {
+        System.out.println("SENDING: " + Arrays.toString(command) + " size: " + command.length);
         try {
             serialPort.getOutputStream().write(command);
             serialPort.getOutputStream().flush();
+            //listen();   // THREAD TERMINATING DEBUG ONLY
             int ack = serialPort.getInputStream().read();
+            //int ack = 200;
             if (ack != 0xC8) {
                 printError();
             }
+            System.out.println("Acknowledged");
             return ack;
         } catch (IOException e) {
             e.printStackTrace();
         }
         return -1;
+    }
+
+    private void listen() {
+        System.out.println("Started listening");
+        try {
+            while (true) {
+                System.out.println("R: " + serialPort.getInputStream().read());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("NO LONGER IN WHILE LOOP");
     }
 
     // This method is pretty dumb and slow, but this will basically never be the bottleneck, so it doesn't actually matter
@@ -61,18 +80,17 @@ public class CommandQueue {
         String[] commandArr = command.split(";");
         StringBuilder currentGuess = new StringBuilder();
         List<byte[]> res = new ArrayList<>();
-        int currentLength = 0;
         for (int i = 0; i < commandArr.length; i++) {
             int newLength;
             if (currentGuess.isEmpty()) {
-                newLength = currentLength + BytecodeConverter.convertToBytes(commandArr[i]).length;
+                newLength = BytecodeConverter.convertToBytes(commandArr[i]).length;
             } else {
-                newLength = currentLength + BytecodeConverter.convertToBytes(currentGuess + ";" + commandArr[i]).length;
+                newLength = BytecodeConverter.convertToBytes(currentGuess + ";" + commandArr[i]).length;
             }
             // Safety range of 10
             if (newLength > (SerialConstants.BUFFER_SIZE - 10)) {
-                res.add(BytecodeConverter.convertToBytes(currentGuess + ";" + commandArr[i]));
-                currentLength = 0;
+                res.add(BytecodeConverter.convertToBytes(currentGuess.toString()));
+                i--;
                 currentGuess = new StringBuilder();
             } else {
                 if (currentGuess.isEmpty()) {
@@ -80,9 +98,9 @@ public class CommandQueue {
                 } else {
                     currentGuess.append(";").append(commandArr[i]);
                 }
-                currentLength = newLength;
             }
         }
+        res.add(BytecodeConverter.convertToBytes(currentGuess.toString()));
         return res;
     }
 
@@ -95,9 +113,9 @@ public class CommandQueue {
                     int expectedLength = serialPort.getInputStream().read();
                     int actualLength = serialPort.getInputStream().read();
                     System.out.println("ERROR: Unexpected command size, received length: " + actualLength
-                            + "expected length: " + expectedLength);
+                            + " expected length: " + expectedLength);
                 }
-                case 0x02 -> System.out.println("ERROR: Missing command terminator");
+                case 0x02 -> System.out.println("ERROR: Missing command terminator (" + (byte) 0xFE + ")");
                 case 0x03 -> {
                     int code = serialPort.getInputStream().read();
                     System.out.println("ERROR: Unexpected command opcode, received: " + code);

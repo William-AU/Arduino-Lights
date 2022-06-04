@@ -34,9 +34,15 @@ public class Application implements CommandLineRunner {
     public void run(String... args) throws Exception {
         Connection conn = connectionManager.getConnection();
         //conn.clear();
+        //conn.setAll(12, 80, 120);
         //conn.setAll(0, 150, 0);
+
         for (int i = 0; i < SerialConstants.MAX_LED + 1; i++) {
-            conn.setLED(i, 0, 150, 0);
+            conn.setLED(i, 0, 0, 255);
         }
+
+        //conn.setLED(0, 0, 150, 0);
+
+
     }
 }
