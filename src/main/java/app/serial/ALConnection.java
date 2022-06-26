@@ -7,10 +7,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class Connection {
+public class ALConnection {
     private final SerialPort serialPort;
     private final CommandQueue commandQueue;
-    public Connection(SerialPort serialPort) {
+    public ALConnection(SerialPort serialPort) {
         this.serialPort = serialPort;
         this.commandQueue = new CommandQueue(serialPort);
         boolean handShakeFound = false;

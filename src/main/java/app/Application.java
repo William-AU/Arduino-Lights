@@ -1,27 +1,32 @@
 package app;
 
 import app.common.SerialConstants;
-import app.serial.Connection;
+import app.serial.ALConnection;
 import app.serial.ConnectionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import java.util.Random;
 
 @EnableScheduling
 @SpringBootApplication
 public class Application implements CommandLineRunner {
     private final ConnectionManager connectionManager;
+    private static boolean isRunning = false;
 
     @Autowired
     public Application(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
 
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
+    protected static void main(String[] args) {
+        if (!isRunning) {
+            SpringApplication.run(Application.class, args);
+            isRunning = true;
+        }
     }
 
     /**
@@ -32,15 +37,22 @@ public class Application implements CommandLineRunner {
      */
     @Override
     public void run(String... args) throws Exception {
-        Connection conn = connectionManager.getConnection();
+        ALConnection conn = connectionManager.getConnection();
         //conn.clear();
         //conn.setAll(12, 80, 120);
         //conn.setAll(0, 150, 0);
 
-        for (int i = 0; i < SerialConstants.MAX_LED + 1; i++) {
-            conn.setLED(i, 0, 0, 255);
-        }
 
+        while (true) {
+            for (int i = 0; i < SerialConstants.MAX_LED + 1; i++) {
+                Random rn = new Random();
+                int a = rn.nextInt(20);
+                int b = rn.nextInt(20);
+                int c = rn.nextInt(20);
+                conn.setLED(i, a, b, c);
+            }
+            //System.out.println("GOING AGAIN");
+        }
         //conn.setLED(0, 0, 150, 0);
 
 

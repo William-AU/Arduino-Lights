@@ -24,7 +24,7 @@ public class ConnectionManager {
         return serialPort;
     }
 
-    public Connection getConnection() {
-        return new Connection(serialPort);
+    public ALConnection getConnection() {
+        return new ALConnection(serialPort);
     }
 }
