@@ -1,7 +1,20 @@
 plugins {
     id 'org.springframework.boot' version '2.6.2'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = "org.example.Arduino-Lights"
+version = "1.0"
+
+bootJar {
+    enabled = false
+}
+
+jar {
+    enabled = true
 }
 
 group 'org.example'
@@ -50,6 +63,24 @@ dependencies {
 
     // HTTP Stuff
     compileOnly 'org.apache.httpcomponents:httpclient:4.5.13'
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.example.Arduino-Lights'
+            artifactId = 'Arduino-Lights'
+            version = '1.0'
+
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            name = "Arduino-Lights"
+            url = "/tmp/test-repository"
+        }
+    }
 }
 
 test {
