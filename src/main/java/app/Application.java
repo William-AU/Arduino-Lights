@@ -3,6 +3,8 @@ package app;
 import app.common.SerialConstants;
 import app.serial.ALConnection;
 import app.serial.ConnectionManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -24,6 +26,8 @@ public class Application implements CommandLineRunner {
 
     protected static void main(String[] args) {
         if (!isRunning) {
+            Logger logger = LogManager.getLogger();
+            logger.info("Program started");
             SpringApplication.run(Application.class, args);
             isRunning = true;
         }
@@ -37,24 +41,6 @@ public class Application implements CommandLineRunner {
      */
     @Override
     public void run(String... args) throws Exception {
-        ALConnection conn = connectionManager.getConnection();
-        //conn.clear();
-        //conn.setAll(12, 80, 120);
-        //conn.setAll(0, 150, 0);
-
-
-        while (true) {
-            for (int i = 0; i < SerialConstants.MAX_LED + 1; i++) {
-                Random rn = new Random();
-                int a = rn.nextInt(20);
-                int b = rn.nextInt(20);
-                int c = rn.nextInt(20);
-                conn.setLED(i, a, b, c);
-            }
-            //System.out.println("GOING AGAIN");
-        }
-        //conn.setLED(0, 0, 150, 0);
-
 
     }
 }

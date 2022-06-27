@@ -5,26 +5,25 @@ import org.springframework.stereotype.Service;
 import app.common.SerialConstants;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class ConnectionManager {
-    private final SerialPort serialPort;
+    private static final List<ALConnection> connections = new ArrayList<>();
 
-    public ConnectionManager() throws IOException {
-        serialPort = SerialPort.getCommPort(SerialConstants.PORT);
 
-        serialPort.setComPortParameters(57600, 8, 1, 0);
-        serialPort.setComPortTimeouts(SerialPort.TIMEOUT_WRITE_BLOCKING, 0, 0);
-        if (!serialPort.openPort()) {
-            throw new IOException("Could not open serial port, likely already in use");
-        }
+    public static void addConnection(ALConnection connection) {
+        connections.add(connection);
     }
 
-    public SerialPort getPort() {
-        return serialPort;
+    public static void removeConnection(ALConnection connection) {
+        connections.remove(connection);
     }
 
-    public ALConnection getConnection() {
-        return new ALConnection(serialPort);
+    public static int getNumberOfConnections() {
+        return connections.size();
     }
 }

@@ -10,12 +10,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-@Component
-public class CommandQueue {
+public class CommandScheduler {
     private final SerialPort serialPort;
     private static Queue<String> queue;
 
-    public CommandQueue(SerialPort serialPort) {
+    public CommandScheduler(SerialPort serialPort) {
         this.serialPort = serialPort;
         queue = new ArrayDeque<>();
     }

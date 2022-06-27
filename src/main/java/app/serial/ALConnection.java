@@ -2,17 +2,17 @@ package app.serial;
 
 import app.common.SerialConstants;
 import com.fazecast.jSerialComm.SerialPort;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 public class ALConnection {
     private final SerialPort serialPort;
-    private final CommandQueue commandQueue;
+    private final CommandScheduler commandScheduler;
     public ALConnection(SerialPort serialPort) {
+        System.out.println("CREATING CONNECTION");
         this.serialPort = serialPort;
-        this.commandQueue = new CommandQueue(serialPort);
+        this.commandScheduler = new CommandScheduler(serialPort);
         boolean handShakeFound = false;
         byte first = (byte) 0xFF;
         byte second = (byte) 0xFF;
@@ -63,6 +63,10 @@ public class ALConnection {
         }
     }
 
+    public SerialPort getSerialPort() {
+        return serialPort;
+    }
+
     private String formatCommand(String name, Object... args) {
         StringBuilder res = new StringBuilder();
         res.append(name);
@@ -105,7 +109,7 @@ public class ALConnection {
 
 
     private void send(String command) {
-        commandQueue.addCommand(command);
+        commandScheduler.addCommand(command);
     }
 
     public void debugSendByte(byte toSend) {
@@ -117,5 +121,9 @@ public class ALConnection {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void close() {
+        ConnectionManager.removeConnection(this);
     }
 }

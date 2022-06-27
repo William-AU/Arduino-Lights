@@ -1,4 +1,5 @@
 import app.ALBuilder;
+import app.serial.ALConnection;
 
 import java.io.IOException;
 
@@ -8,7 +9,8 @@ public class FullTest {
         builder.setPort("COM5");
         builder.setNoOfLEDs(137);
         try {
-            builder.build();
+            ALConnection connection = builder.build();
+            connection.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

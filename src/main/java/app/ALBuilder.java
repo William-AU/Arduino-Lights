@@ -2,7 +2,11 @@ package app;
 
 import app.common.SerialConstants;
 import app.serial.ALConnection;
+import app.serial.CommandScheduler;
+import app.serial.ConnectionManager;
 import com.fazecast.jSerialComm.SerialPort;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 
@@ -21,8 +25,6 @@ public class ALBuilder {
     private int readTimeout = 0;
     private int writeTimeout = 0;
 
-
-
     public ALConnection build() throws IllegalArgumentException, IOException {
         Application.main(new String[]{});
         if (port == null) throw new IllegalArgumentException("Must specify the port");
@@ -34,8 +36,9 @@ public class ALBuilder {
         if (!serialPort.openPort()) {
             throw new IOException("Could not open serial port, likely already in use");
         }
-
-        return new ALConnection(serialPort);
+        ALConnection connection = new ALConnection(serialPort);
+        ConnectionManager.addConnection(connection);
+        return connection;
     }
 
 
