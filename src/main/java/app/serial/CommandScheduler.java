@@ -2,6 +2,8 @@ package app.serial;
 
 import app.common.SerialConstants;
 import com.fazecast.jSerialComm.SerialPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,10 +15,12 @@ import java.util.*;
 public class CommandScheduler {
     private final SerialPort serialPort;
     private static Queue<String> queue;
+    private final Logger logger;
 
     public CommandScheduler(SerialPort serialPort) {
         this.serialPort = serialPort;
         queue = new ArrayDeque<>();
+        logger = LoggerFactory.getLogger(CommandScheduler.class);
     }
 
     public void addCommand(String command) {
@@ -43,7 +47,7 @@ public class CommandScheduler {
 
     // TODO: add a timeout somewhere here
     private int send(byte[] command) {
-        System.out.println("SENDING: " + Arrays.toString(command) + " size: " + command.length);
+        logger.debug("SENDING: " + Arrays.toString(command) + " size: " + command.length);
         try {
             serialPort.getOutputStream().write(command);
             serialPort.getOutputStream().flush();
@@ -53,7 +57,7 @@ public class CommandScheduler {
             if (ack != 0xC8) {
                 printError();
             }
-            System.out.println("Acknowledged");
+            logger.debug("Commmand acknowledged");
             return ack;
         } catch (IOException e) {
             e.printStackTrace();
@@ -62,15 +66,14 @@ public class CommandScheduler {
     }
 
     private void listen() {
-        System.out.println("Started listening");
+        logger.debug("Started listening");
         try {
             while (true) {
-                System.out.println("R: " + serialPort.getInputStream().read());
+                logger.debug("R: " + serialPort.getInputStream().read());
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("NO LONGER IN WHILE LOOP");
     }
 
     // This method is pretty dumb and slow, but this will basically never be the bottleneck, so it doesn't actually matter
@@ -107,21 +110,21 @@ public class CommandScheduler {
         try {
             byte errorCode = (byte) serialPort.getInputStream().read();
             switch (errorCode) {
-                case 0x00 -> System.out.println("ERROR: Command timed out");
+                case 0x00 -> logger.error("Command timed out");
                 case 0x01 -> {
                     int expectedLength = serialPort.getInputStream().read();
                     int actualLength = serialPort.getInputStream().read();
-                    System.out.println("ERROR: Unexpected command size, received length: " + actualLength
+                    logger.error("Unexpected command size, received length: " + actualLength
                             + " expected length: " + expectedLength);
                 }
-                case 0x02 -> System.out.println("ERROR: Missing command terminator (" + (byte) 0xFE + ")");
+                case 0x02 -> logger.error("Missing command terminator (" + (byte) 0xFE + ")");
                 case 0x03 -> {
                     int code = serialPort.getInputStream().read();
-                    System.out.println("ERROR: Unexpected command opcode, received: " + code);
+                    logger.error("Unexpected command opcode, received: " + code);
                 }
-                case 0x04 -> System.out.println("ERROR: Incorrect number of arguments");
-                case (byte) 0xFF -> System.out.println("ERROR: An unexpected error occurred");
-                default -> System.out.println("ERROR: Unexpected error message signature received");
+                case 0x04 -> logger.error("Incorrect number of arguments");
+                case (byte) 0xFF -> logger.error("An unexpected error occurred");
+                default -> logger.error("Unexpected error message signature received");
             }
         } catch (IOException e) {
             e.printStackTrace();

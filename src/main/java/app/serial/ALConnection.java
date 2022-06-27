@@ -2,6 +2,8 @@ package app.serial;
 
 import app.common.SerialConstants;
 import com.fazecast.jSerialComm.SerialPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
@@ -9,8 +11,9 @@ import java.io.IOException;
 public class ALConnection {
     private final SerialPort serialPort;
     private final CommandScheduler commandScheduler;
+    private final Logger logger = LoggerFactory.getLogger(ALConnection.class);
     public ALConnection(SerialPort serialPort) {
-        System.out.println("CREATING CONNECTION");
+        logger.info("Connection established");
         this.serialPort = serialPort;
         this.commandScheduler = new CommandScheduler(serialPort);
         boolean handShakeFound = false;
@@ -18,17 +21,8 @@ public class ALConnection {
         byte second = (byte) 0xFF;
         boolean inSequence = false;
 
-        while (serialPort.bytesAvailable() > 0) {
-            try {
-                // Empty the initial buffer
-                System.out.println(serialPort.getInputStream().read());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
         try {
-            System.out.println("Initiating handshake");
+            logger.info("Initiating handshake");
             this.serialPort.getOutputStream().write((byte) 0xAA);
             this.serialPort.getOutputStream().flush();
         } catch (IOException e) {
@@ -38,26 +32,27 @@ public class ALConnection {
         while (!handShakeFound) {
             try {
                 byte received = (byte) this.serialPort.getInputStream().read();
-                System.out.println(received);
+                logger.debug("Received byte [" + received + "]");
                 if (received == (byte) 0xBB) {
-                    System.out.println("Received first byte");
+                    logger.debug("Received first byte");
                     first = (byte) 0xBB;
                     second = (byte) 0xFF;
                     inSequence = true;
                 }
                 else if (received == (byte) 0xCC && inSequence) {
-                    System.out.println("Received second byte");
+                    logger.debug("Received second byte");
                     second = (byte) 0xCC;
                 }
                 else if (received == (byte) 0xDD && inSequence) {
-                    System.out.println("Received third byte, handshake finished");
+                    logger.debug("Received third byte, handshake finished");
                     handShakeFound = true;
                 }
                 else if (inSequence){
-                    System.out.println("Sequence broken!");
+                    logger.warn("Handshake sequence broken");
                     inSequence = false;
                 }
             } catch (IOException e) {
+                logger.error("Unable to finish handshake");
                 e.printStackTrace();
             }
         }
@@ -114,10 +109,10 @@ public class ALConnection {
 
     public void debugSendByte(byte toSend) {
         try {
-            System.out.println("SENDING BYTE: " + toSend);
+            logger.debug("SENDING BYTE: " + toSend);
             serialPort.getOutputStream().write(toSend);
             byte received = (byte) serialPort.getInputStream().read();
-            System.out.println("RECEIVED BYTE: " + received);
+            logger.debug("RECEIVED BYTE: " + received);
         } catch (IOException e) {
             e.printStackTrace();
         }

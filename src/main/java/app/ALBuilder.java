@@ -5,7 +5,6 @@ import app.serial.ALConnection;
 import app.serial.CommandScheduler;
 import app.serial.ConnectionManager;
 import com.fazecast.jSerialComm.SerialPort;
-import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
