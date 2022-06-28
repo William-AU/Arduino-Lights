@@ -16,7 +16,7 @@ public class ALBuilder {
     private ALConnection connection;
     private String port;
     private int noOfLEDs = -1;
-    private int pin;
+    private int pin = -1;
     // Default settings
     private int baudRate = 57600;
     private int dataBits = 8;
@@ -29,6 +29,7 @@ public class ALBuilder {
         Application.main(new String[]{});
         if (port == null) throw new IllegalArgumentException("Must specify the port");
         if (noOfLEDs == -1) throw new IllegalArgumentException("Must specify number of LEDs");
+        if (pin == -1) throw new IllegalArgumentException("Must specify pin");
         SerialPort serialPort = SerialPort.getCommPort(port);
 
         serialPort.setComPortParameters(baudRate, dataBits, stopBits, parityBits);
@@ -72,5 +73,9 @@ public class ALBuilder {
 
     public void setWriteTimeout(int writeTimeout) {
         this.writeTimeout = writeTimeout;
+    }
+
+    public void setPin(int pin) {
+        this.pin = pin;
     }
 }

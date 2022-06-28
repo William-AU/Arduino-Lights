@@ -11,7 +11,6 @@ class CommandDispatcher(emptyQueue: Queue<String>, private val serialPort: Seria
     private val commandQueue: Queue<String> = emptyQueue;
     private val logger: Logger = LoggerFactory.getLogger(this.javaClass)
     private var alive: Boolean = true;
-
     private val dispatchThread: Thread = Thread {
         logger.debug("Dispatching thread started")
         while (alive) {
@@ -35,6 +34,11 @@ class CommandDispatcher(emptyQueue: Queue<String>, private val serialPort: Seria
             }
         }
     }
+
+    init {
+        dispatchThread.start()
+    }
+
 
     // This method is pretty dumb and slow, but this will basically never be the bottleneck, so it doesn't actually matter
     private fun clumpCommands(command: String): List<ByteArray>? {
@@ -113,10 +117,6 @@ class CommandDispatcher(emptyQueue: Queue<String>, private val serialPort: Seria
 
     fun queueEmpty(): Boolean {
         return commandQueue.isEmpty()
-    }
-
-    fun init() {
-        dispatchThread.start()
     }
 
     fun dispatch(command: String) {

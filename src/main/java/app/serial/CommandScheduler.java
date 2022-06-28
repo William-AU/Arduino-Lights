@@ -22,7 +22,6 @@ public class CommandScheduler {
         this.serialPort = serialPort;
         logger = LoggerFactory.getLogger(CommandScheduler.class);
         commandDispatcher = new CommandDispatcher(new ArrayDeque<>(), serialPort);
-        commandDispatcher.init();
     }
 
     public boolean queueEmpty() {

@@ -23,6 +23,20 @@ public class ALConnection {
         boolean inSequence = false;
 
         try {
+            // For some reason upon first start, the serial buss sends a bunch of garbage data, we need to remove this,
+            // and ensure the serial bus is clean to initiate the handshake
+            logger.debug("Flushing serial");
+            this.serialPort.getOutputStream().write((byte) 0xAA);
+            this.serialPort.getOutputStream().flush();
+            // This call is needed because of how java reads from serial, it will not put any data into the stream
+            // buffer before at least one byte has been read, therefore we need to first write a byte,
+            // which will prompt the arduino to write *something* so that we can get a more accurate read
+            this.serialPort.getInputStream().read();
+            logger.debug("Serial bytes available: " + this.serialPort.getInputStream().available());
+            while (this.serialPort.getInputStream().available() != 0) {
+                this.serialPort.getInputStream().read();
+            }
+
             logger.info("Initiating handshake");
             this.serialPort.getOutputStream().write((byte) 0xAA);
             this.serialPort.getOutputStream().flush();
