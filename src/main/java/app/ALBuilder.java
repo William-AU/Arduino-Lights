@@ -16,6 +16,7 @@ public class ALBuilder {
     private ALConnection connection;
     private String port;
     private int noOfLEDs = -1;
+    private int pin;
     // Default settings
     private int baudRate = 57600;
     private int dataBits = 8;

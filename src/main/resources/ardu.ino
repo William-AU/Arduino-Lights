@@ -1,5 +1,7 @@
-// https://github.com/oogre/StackArray
-#include <StackArray.h>
+#include <SSVQueueStackArray.h>
+
+// https://github.com/oogre/SSVQueueStackArray
+//#include <SSVQueueStackArray .h>
 #include <Adafruit_NeoPixel.h>
 #include <iostream>
 #ifdef __AVR__
@@ -7,10 +9,10 @@
 #endif
 
 // Which pin on the Arduino is connected to the NeoPixels?
-#define PIN        4 // On Trinket or Gemma, suggest changing this to 1
+#define PIN        2 // On Trinket or Gemma, suggest changing this to 1
 
 // How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS 138 // Popular NeoPixel ring size
+#define NUMPIXELS 93 // Popular NeoPixel ring size
 
 // When setting up the NeoPixel library, we tell it how many pixels,
 // and which pin to use to send signals. Note that for older NeoPixel
@@ -31,15 +33,26 @@ void setup() {
   // END of Trinket-specific code.
 
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
+  pixels.clear();
+
 }
 
 void loop() {
+
     if (Serial.available()) {
         byte buffer[1] = {};
         Serial.readBytes(buffer, 1);
-        int noOfBytes = int(buffer[0]);
-        readCommand(noOfBytes);
-    }
+        if (buffer[0] == 0xAA) {
+          byte toWrite[3] = {0xBB, 0xCC, 0xDD};
+          Serial.write(toWrite, 3);
+        } else {
+          int noOfBytes = int(buffer[0]);
+          readCommand(noOfBytes);
+        }
+
+    //allWHITE();
+    pixels.show();
+  }
 }
 
 void readCommand(int length) {
@@ -52,7 +65,7 @@ void readCommand(int length) {
         return;
     }
 
-    if (buffer[sizeof(buffer) - 1] != 0xFE && buffer[length - 1] != 0xFC) {
+    if (buffer[sizeof(buffer) - 1] != 0xFE && buffer[sizeof(buffer) - 1] != 0xFC) {
         byte error[2] = {0xFF, 0x02};
         flushSerial();
         Serial.write(error, 2);
@@ -61,15 +74,31 @@ void readCommand(int length) {
 
     bool hasParams = buffer[0] != 0; // Dirty trick to read 0x00 as false and everything else (but in reality only 0x01) as true
     bool mustAcknowledge = false;
-    if (buffer[sizeof(buffer) - 1] == 254) {
+    if (buffer[sizeof(buffer) - 1] == 0xFE) {
         mustAcknowledge = true;
     }
-    StackArray <byte> commandStack;
-    for (int i = sizeof(buffer) - 1; i > 2; i--) {    // A bit scuffed and should probably be a queue
-        commandStack.push(buffer[i]);
+    SSVQueueStackArray  <byte> reversedStack;
+    SSVQueueStackArray <byte> commandStack;
+    SSVQueueStackArray <byte> debugStack;
+    for (int i = 0; i < sizeof(buffer); i++) {
+      reversedStack.push(buffer[i]);
     }
-
-    switch (buffer[2]) {
+    for (int i = 0; i < sizeof(buffer); i++) {
+      byte toPush = reversedStack.pop();
+      commandStack.push(toPush);
+      debugStack.push(toPush);
+    }
+    commandStack.pop(); // This will always be the param byte, so is safely ignored
+    debugStack.pop();
+    byte debugMessage[sizeof(buffer) + 2] = {};
+    debugMessage[0] = sizeof(commandStack);
+    debugMessage[sizeof(buffer) - 1];
+    for (int i = 0; i < sizeof(buffer) - 1; i++) {
+      debugMessage[i] = debugStack.pop();
+    }
+    //Serial.write(debugMessage, sizeof(buffer) - 1);
+    // Next pop is the command ID
+    switch (commandStack.pop()) {
         case 0x00:
             // Clear
             clear();
@@ -98,7 +127,7 @@ void readCommand(int length) {
     }
 }
 
-void delay(StackArray <byte> commandStack) {
+void delay(SSVQueueStackArray  <byte> commandStack) {
     int millis = extractIntFromStackAndVerify(commandStack);
     if (millis == -1) return;
     if (commandStack.pop() != 0xFE && commandStack.pop() != 0xFC) {
@@ -115,7 +144,7 @@ void flushSerial() {
 }
 
 
-void setLED(StackArray <byte> commandStack) {
+void setLED(SSVQueueStackArray <byte>& commandStack) {
     int LEDNumber = extractIntFromStackAndVerify(commandStack);
     int r = extractIntFromStackAndVerify(commandStack);
     int g = extractIntFromStackAndVerify(commandStack);
@@ -123,7 +152,9 @@ void setLED(StackArray <byte> commandStack) {
 
     // Error handling
     if (LEDNumber == -1 || r == -1 || g == -1 || b == -1) return;
-    if (commandStack.peek() != 0xFE && commandStack.peek() != 0xFC) {
+    byte peek = commandStack.pop();
+    commandStack.push(peek);
+    if (peek != 0xFE && peek != 0xFC) {
         wrongNumberOfArgsError();
         return;
     }
@@ -137,25 +168,31 @@ void wrongNumberOfArgsError() {
     Serial.write(error, 2);
 }
 
-int extractIntFromStackAndVerify(StackArray <byte> commandStack) {
+int extractIntFromStackAndVerify(SSVQueueStackArray <byte>& commandStack) {
     byte firstByte = commandStack.pop();
-        int value = 0;
-        if (commandStack.peek() != 0xFD) {
-            byte number[4] = {};
-            number[0] = firstByte;
-            number[1] = commandStack.pop();
-            number[2] = commandStack.pop();
-            number[3] = commandStack.pop();
-            for (int i = 0; i < 4; i++) {
-                value = (value << 8) + (number[0] & 0xFF);
-            }
-        } else {
-            value = (int) firstByte;
-        }
-    byte terminator = commandStack.pop();
+    int value = 0;
+    byte peek = commandStack.pop();
+    //commandStack.push(peek);
+
+    if (peek != 0xFD) {
+      byte number[4] = {};
+      number[0] = firstByte;
+      number[1] = peek;
+      number[2] = commandStack.pop();
+      number[3] = commandStack.pop();
+      peek = commandStack.pop();
+      for (int i = 0; i < 4; i++) {
+      value = (value << 8) + (number[0] & 0xFF);
+      }
+    } else {
+      value = (int) firstByte;
+    }
+    byte terminator = peek;
+    byte debugMessage[5] = {69, firstByte, peek, terminator, 69};
+    //Serial.write(debugMessage, 5);
     if (terminator != 0xFD) {
-        wrongNumberOfArgsError();
-        return -1;
+      wrongNumberOfArgsError();
+      return -1;
     }
     return value;
 }
@@ -165,20 +202,55 @@ void clear() {
   pixels.clear();
 }
 
-void setALL(StackArray <byte> commandStack) {
+void allRED() {
+  for (int i = 0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, 150, 0, 0);
+  }
+  pixels.show();
+}
+
+void allGREEN() {
+  for (int i = 0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, 0, 150, 0);
+  }
+  pixels.show();
+}
+
+void allBLUE() {
+  for (int i = 0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, 0, 0, 150);
+  }
+  pixels.show();
+}
+
+void allWHITE() {
+  for (int i = 0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, 10, 10, 10);
+  }
+  pixels.show();
+}
+
+byte popTest(SSVQueueStackArray <byte>& commandStack) {
+  return commandStack.pop();
+}
+
+void setALL(SSVQueueStackArray <byte>& commandStack) {
+
     int r = extractIntFromStackAndVerify(commandStack);
     int g = extractIntFromStackAndVerify(commandStack);
     int b = extractIntFromStackAndVerify(commandStack);
 
     if (r == -1  || g == -1 || b == -1) return;
-    if (commandStack.pop() != 0xFD && commandStack.pop() != 0xFC) {
+    byte pop = commandStack.pop();
+    if (pop != 0xFE && pop != 0xFC) {
         wrongNumberOfArgsError();
         return;
     }
 
-    // TODO: This should not be NUMPIXELS but instead get it as a parameter
+    // TODO: This should not be NUMPIXELS but instead get it as a parameter in acknowledgement
     for (int i = 0; i < NUMPIXELS; i++) {
         pixels.setPixelColor(i, r, g, b);
+        pixels.show();
     }
 }
 

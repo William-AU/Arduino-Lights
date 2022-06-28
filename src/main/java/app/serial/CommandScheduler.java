@@ -23,14 +23,21 @@ public class CommandScheduler {
         logger = LoggerFactory.getLogger(CommandScheduler.class);
     }
 
+    public boolean queueEmpty() {
+        return queue.isEmpty();
+    }
+
     public void addCommand(String command) {
+        logger.debug("Adding command: " + command);
         queue.add(command);
     }
 
     @Scheduled(fixedDelay = 1)
     private void send() {
+        logger.debug("Scheduled send task started");
         if (!queue.isEmpty()) {
             StringBuilder command = new StringBuilder(queue.remove());
+            logger.debug("Found command: " + command);
             if (command.toString().toLowerCase().contains("setled") && !queue.isEmpty() && queue.peek().toLowerCase().contains("setled")) {
                 while (queue.peek() != null && queue.peek().toLowerCase().contains("setled")) {
                     command.append(";").append(queue.remove());

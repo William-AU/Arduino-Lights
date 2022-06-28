@@ -21,6 +21,7 @@ public class ConnectionManager {
 
     public static void removeConnection(ALConnection connection) {
         connections.remove(connection);
+        connection.getSerialPort().closePort();
     }
 
     public static int getNumberOfConnections() {

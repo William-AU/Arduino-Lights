@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 public class ALConnection {
     private final SerialPort serialPort;
@@ -118,7 +119,30 @@ public class ALConnection {
         }
     }
 
-    public void close() {
+    /**
+     * Waits until any current commands have been sent and acknowledged, afterwards closes the connection
+     * @param timeoutSeconds Number of seconds to wait before TimeoutException is thrown
+     * @throws TimeoutException If the commandqueue can not be emptied in the given time
+     */
+    public void finishAndClose(int timeoutSeconds) throws TimeoutException {
+        //TODO: Fix busy waiting, it shouldn't be a huge problem since this will likely only run a few seconds at most, but still bad practice
+        int timer = 0;
+        while (!commandScheduler.queueEmpty()) {
+            if (timer > timeoutSeconds) throw new TimeoutException("Failed to close connection, could not empty command queue");
+            timer++;
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                logger.error("Unable to sleep in thread", e);
+            }
+        }
+        ConnectionManager.removeConnection(this);
+    }
+
+    /**
+     * Forcefully ends any ongoing connection
+     */
+    public void stopAndClose() {
         ConnectionManager.removeConnection(this);
     }
 }
