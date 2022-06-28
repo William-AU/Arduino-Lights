@@ -136,6 +136,7 @@ public class ALConnection {
                 logger.error("Unable to sleep in thread", e);
             }
         }
+        commandScheduler.close();
         ConnectionManager.removeConnection(this);
     }
 
@@ -143,6 +144,7 @@ public class ALConnection {
      * Forcefully ends any ongoing connection
      */
     public void stopAndClose() {
+        commandScheduler.close();
         ConnectionManager.removeConnection(this);
     }
 }

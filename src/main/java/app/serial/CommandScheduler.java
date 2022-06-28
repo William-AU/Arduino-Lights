@@ -12,26 +12,34 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+// This is basically just a bridge to some kotlin thread management because that's easier... yeah it's not pretty
 public class CommandScheduler {
     private final SerialPort serialPort;
-    private static Queue<String> queue;
     private final Logger logger;
+    private final CommandDispatcher commandDispatcher;
 
     public CommandScheduler(SerialPort serialPort) {
         this.serialPort = serialPort;
-        queue = new ArrayDeque<>();
         logger = LoggerFactory.getLogger(CommandScheduler.class);
+        commandDispatcher = new CommandDispatcher(new ArrayDeque<>(), serialPort);
+        commandDispatcher.init();
     }
 
     public boolean queueEmpty() {
-        return queue.isEmpty();
+        return commandDispatcher.queueEmpty();
     }
 
     public void addCommand(String command) {
         logger.debug("Adding command: " + command);
-        queue.add(command);
+        commandDispatcher.dispatch(command);
     }
 
+    public void close() {
+        commandDispatcher.kill();
+    }
+
+
+    /*
     @Scheduled(fixedDelay = 1)
     private void send() {
         logger.debug("Scheduled send task started");
@@ -137,4 +145,5 @@ public class CommandScheduler {
             e.printStackTrace();
         }
     }
+     */
 }

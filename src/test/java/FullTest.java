@@ -11,7 +11,7 @@ public class FullTest {
         builder.setNoOfLEDs(137);
         try {
             ALConnection connection = builder.build();
-            connection.setAll(50, 0, 0);
+            connection.setAll(0, 0, 50);
             connection.finishAndClose(5);
         } catch (IOException e) {
             e.printStackTrace();
