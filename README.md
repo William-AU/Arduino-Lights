@@ -6,13 +6,14 @@ A simple API for controlling NeoPixel-like LEDs from Java.
 Download the .jar and .ino from the [latest release](https://github.com/William-AU/Arduino-Lights/releases/latest), flash the .ino file onto an arduino, check the serial connection name, and import the .jar file into your project.
 
 ## Usage ##
-All communication with the arduino is handled through the `ALConnection` class, which can be created using the `ALBuilder`, by default the only values that need to be set is the serial port name and the number of LEDs on the strip, although all parameters used in [jSerialComm](https://fazecast.github.io/jSerialComm/) are supported.
+All communication with the arduino is handled through the `ALConnection` class, which can be created using the `ALBuilder`, by default the only values that need to be set is the serial port name, the arduino pin that the lights are connected to, and the number of LEDs on the strip, although all parameters used in [jSerialComm](https://fazecast.github.io/jSerialComm/) are supported.
 
 A simple example is as follows
 ```java
 ALBuilder builder = new ALBuilder();
 builder.setPort("COM5");
 builder.setNoOfLEDs(137);
+builder.setPin(4);
 try {
     ALConnection connection = builder.build(); // Open the connection
     /*
@@ -51,6 +52,8 @@ Each command has the following codes:
 * 0x01: Set LED
 * 0x02: Set all LEDs
 * 0x03: Delay
+* 0x10: Configure PIN
+* 0x11: Configure number of LEDs
 
 ## Opening a connection ##
 When opening a new connection, it must be verified with a handshake to ensure both the sender and receiver have a clean buffer to work with, this is done by the sender first sending 0xAA, afterwards the receiver must respond with 0xBB, 0xCC, 0xDD in order.
